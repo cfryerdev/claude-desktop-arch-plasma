@@ -68,6 +68,16 @@ build() {
 's|([A-Za-z_$][A-Za-z0-9_$]*)\.join\(\s*process\.resourcesPath\s*,\s*"app\.asar"\s*,\s*"\.vite"\s*,\s*"build"\s*,\s*"mcp-runtime"\s*,\s*"nodeHost\.js"\s*\)|\1.join(require("electron").app.getAppPath(),".vite","build","mcp-runtime","nodeHost.js")|g' \
 app.asar.contents/.vite/build/index*.js
 
+  # Fix window frame for Linux - change titleBarStyle from "hidden" to default for main window
+  sed -i 's/titleBarStyle:"hidden"/titleBarStyle:"default"/g' app.asar.contents/.vite/build/index.js
+
+  # Fix OAuth login - patch doAuthInBrowser to handle missing macOS AuthRequest on Linux
+  # Without this, the function crashes before reaching the browser fallback code
+  sed -i 's/a&&a\.AuthRequest\.isAvailable()/a\&\&a.AuthRequest\&\&a.AuthRequest.isAvailable\&\&a.AuthRequest.isAvailable()/g' app.asar.contents/.vite/build/index.js
+
+  # Fix content view sizing - remove titlebar height offset since native titlebar handles it
+  sed -i 's/u=e2+(Xi?1:0)/u=0/g' app.asar.contents/.vite/build/index.js
+
   # Replace native bindings with patchy-cnb
   pwd
   local PATCHY_CNB_NODE=$(find ../patchy-cnb/patchy-cnb -name "patchy-cnb.*.node")
